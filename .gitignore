@@ -1,0 +1,7 @@
+# Ignorar arquivo de configurações locais
+.env
+
+# Outros arquivos e diretórios a ignorar
+node_modules/
+*.log
+tmp/

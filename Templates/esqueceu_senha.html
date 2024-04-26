@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Esqueceu a Senha</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background-color: #0056b3;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .bg {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .login-container {
+            padding: 40px;
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgb(0, 0, 0);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        h2.centered-title {
+            color: #0056b3;
+            margin-bottom: 30px;
+        }
+
+        .bordered-label {
+            color: #0056b3;
+            margin-bottom: 15px;
+            text-align: left;
+            display: block;
+            width: 100%;
+            padding-left: 15px;
+        }
+
+        .login-container input {
+            margin-bottom: 20px;
+            padding: 15px;
+            width: calc(100% - 30px);
+            border-radius: 5px;
+            outline: none;
+            background: #222831;
+            border: 1px solid #393e46;
+            color: #eeeeee;
+            transition: all 0.3s ease;
+        }
+
+        .login-container input:focus {
+            border-color: #0056b3;
+            background: #393e46;
+        }
+
+        .login-container button {
+            padding: 15px;
+            background-color: #0056b3;
+            border: none;
+            color: #FFFFFF;
+            text-transform: uppercase;
+            cursor: pointer;
+            display: block;
+            margin: 0 auto;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .login-container button:hover {
+            background-color: #0056b3;
+        }
+
+        .flash {
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .flash.error {
+            background-color: #d9534f;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg">
+        <div class="login-container">
+            <h2 class="centered-title">Esqueceu sua Senha?</h2>
+            <form action="{{ url_for('esqueceu_senha') }}" method="post">
+                <label class="bordered-label" for="email">E-mail:</label>
+                <input type="email" id="email" name="email" required>
+                <button type="submit">Enviar Instruções</button>
+            </form>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+</body>
+</html>

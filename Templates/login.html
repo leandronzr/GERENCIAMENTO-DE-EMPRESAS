@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            background: url('static/your-texture-image.jpg') no-repeat center center fixed; 
+            background-size: cover;
+            color: #0056b3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .bg {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            animation: fadeIn 2s ease-out;
+        }
+
+        .login-container {
+            padding: 40px;
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 400px;
+            color: #333;
+        }
+
+        .login-logo {
+            width: 120px;
+            margin-bottom: 30px;
+        }
+
+        h2.centered-title {
+            color: #0056b3;
+            margin-bottom: 30px;
+        }
+
+        .bordered-label {
+            color: #0056b3;
+            margin-bottom: 15px;
+            text-align: left;
+            display: block;
+            width: 100%;
+            padding-left: 15px;
+        }
+
+        .login-container input {
+            margin-bottom: 20px;
+            padding: 15px;
+            width: calc(100% - 30px);
+            border-radius: 5px;
+            outline: none;
+            background: #222831;
+            border: 2px solid #393e46;
+            color: #eeeeee;
+            transition: all 0.5s ease;
+        }
+
+        .login-container input:focus {
+            border-color: #0056b3;
+            background: #393e46;
+            box-shadow: 0 0 8px #0056b3;
+        }
+
+        .login-container button {
+            padding: 15px;
+            background-color: #0056b3;
+            border: none;
+            color: #FFFFFF;
+            text-transform: uppercase;
+            cursor: pointer;
+            display: block;
+            margin: 0 auto;
+            margin-bottom: 20px;
+            transition: background-color 0.5s ease, transform 0.5s ease;
+        }
+
+        .login-container button:active {
+            transform: scale(0.95);
+        }
+
+        .login-container button:hover {
+            background-color: #003d82;
+            box-shadow: 0 0 10px #0056b3;
+        }
+
+        a {
+            color: #0056b3;
+            transition: color 0.3s ease;
+        }
+
+        a:hover {
+            color: #003d82;
+        }
+
+        .flash {
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .flash.error {
+            background-color: #a6bef3;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg">
+        <div class="login-container">
+            <img src="static/logologic.jpg" alt="Logo da Empresa" class="login-logo">
+            <h2 class="centered-title">BI LOGIC</h2>
+            <form action="/" method="post">
+                <label class="bordered-label" for="usuario">usuário:</label>
+                <input type="text" id="usuario" name="usuario" required>
+                <label class="bordered-label" for="senha">senha:</label>
+                <input type="password" id="senha" name="senha" required>
+                <button type="submit">Entrar</button>
+                <a href="{{ url_for('esqueceu_senha') }}">Esqueceu sua senha?</a>
+            </form>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+</body>
+</html>

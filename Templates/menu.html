@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Menu</title>
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Roboto', sans-serif;
+            background-color: #0056b3;
+        }
+        .main-menu {
+            background-color: #ffffff;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 200px;
+            height: 100%;
+            overflow: hidden;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            transition: opacity 0.5s ease-in-out;
+        }
+        .menu-title {
+            color: #0056b3;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.8em;
+            font-weight: 700;
+            margin-bottom: 10px; /* Spacing between title and menu items */
+        }
+        .menu-items, .logout {
+            list-style-type: none;
+            padding: 0;
+            margin: 0 10px;
+            width: calc(100% - 20px);
+        }
+        .menu-items li > a, .logout li > a {
+            color: #0056b3;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin: 5px 0;
+            border: 1px solid #0056b3;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+        .menu-items li > a:hover, .logout li > a:hover {
+            background-color: #0056b3;
+            color: #ffffff;
+            transform: scale(1.1);
+        }
+        .fa-2x {
+            font-size: 2em;
+            margin-right: 10px;
+            transition: transform 0.3s ease;
+        }
+        .fa-2x:hover {
+            transform: rotate(360deg);
+        }
+        #loading {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            color: #0056b3;
+            z-index: 1500;
+            visibility: visible;
+            opacity: 1;
+        }
+        .fa-spinner {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            setTimeout(function() {
+                $('#loading').fadeOut(500);
+            }, 1000); // Simulate loading time
+        });
+
+        function loadContent(element) {
+            $('#loading').fadeIn(200);
+            var url = element.getAttribute('data-url');
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function(response) {
+                    $('#content').html(response);
+                    $('#loading').fadeOut(500);
+                },
+                error: function(error) {
+                    $('#content').html('<p>Erro ao carregar o conteúdo.</p>');
+                    $('#loading').fadeOut(500);
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+    <div id="loading"><i class="fas fa-spinner"></i> Carregando...</div>
+    <nav class="main-menu">
+        <div class="menu-title">HOME</div>
+        <ul class="menu-items">
+            {% if session['tipo'] == 'admin' %}
+            <li><a href="javascript:void(0)" data-url="{{ url_for('empresas') }}" onclick="loadContent(this)"><i class="fas fa-building fa-2x"></i><span class="nav-text">Empresas</span></a></li>
+            <li><a href="javascript:void(0)" data-url="{{ url_for('adicionar_empresa') }}" onclick="loadContent(this)"><i class="fas fa-plus-circle fa-2x"></i><span class="nav-text">Adicionar Empresa</span></a></li>
+            <li><a href="javascript:void(0)" data-url="{{ url_for('cadastrar_usuario') }}" onclick="loadContent(this)"><i class="fas fa-user-plus fa-2x"></i><span class="nav-text">Cadastrar Usuário</span></a></li>
+            <li><a href="javascript:void(0)" data-url="{{ url_for('gerenciar_empresas') }}" onclick="loadContent(this)"><i class="fas fa-tools fa-2x"></i><span class="nav-text">Gerenciar Empresas</span></a></li>
+            <li><a href="javascript:void(0)" data-url="{{ url_for('gerenciar_usuarios') }}" onclick="loadContent(this)"><i class="fas fa-users fa-2x"></i><span class="nav-text">Gerenciar Usuários</span></a></li>
+            {% elif session['tipo'] == 'empresa' %}
+            <li><a href="javascript:void(0)" data-url="{{ url_for('empresas') }}" onclick="loadContent(this)"><i class="fas fa-building fa-2x"></i><span class="nav-text">Empresa</span></a></li>
+            {% endif %}
+            <li><a href="javascript:void(0)" data-url="{{ url_for('atendimento') }}" onclick="loadContent(this)"><i class="fas fa-headset fa-2x"></i><span class="nav-text">Atendimento ao Cliente</span></a></li>
+        </ul>
+        <ul class="logout">
+            <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt fa-2x"></i><span class="nav-text">Logout</span></a></li>
+        </ul>
+    </nav>
+    <div id="content">
+        <!-- Dynamic content will be loaded here -->
+    </div>
+</body>
+</html>

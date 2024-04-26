@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Empresas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f7fc;
+        }
+        .main-menu {
+            background-color: #ffffff;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 200px;
+            height: 100%;
+            overflow: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .back-button {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 05px;
+            width: 100%;
+            background-color: #0056b3;
+            color: white;
+            text-align: left;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .back-button:hover {
+            background-color: #003d82;
+        }
+        .search-box {
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #cccccc;
+        }
+        .search-box input {
+            width: calc(100% - 40px);
+            padding: 8px;
+            border: 2px solid #0056b3;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        .search-box i {
+            color: #0056b3;
+            cursor: pointer;
+        }
+        .menu-items {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            width: 100%;
+            background: #ffffff;
+        }
+        .menu-items li > a {
+            color: #0056b3;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid #e1e4e8;
+        }
+        .menu-items li > a:hover, .menu-items li.active > a {
+            background-color: #0056b3;
+            color: #ffffff;
+            transform: translateX(5px);
+        }
+        .submenu {
+            display: none;
+            background: #ffffff;
+            padding: 0;
+            margin-top: 5px;
+            text-align: left;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .submenu a {
+            display: flex;
+            align-items: center;
+            color: #0056b3;
+            padding: 10px 20px;
+            text-decoration: none;
+            transition: background-color 0.2s, color 0.2s;
+            border-bottom: 1px solid #e1e4e8; /* Added border for separation */
+            margin-left: 20px; /* Ensures space between icon and text */
+        }
+        .submenu a:hover {
+            background-color: #e0f0ff;
+            color: #0056b3;
+        }
+        #full-page-iframe {
+            position: fixed;
+            top: 0;
+            left: 220px;
+            width: calc(100% - 220px);
+            height: 110%;
+            border: none;
+        }
+        .company-image {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: calc(100% - 220px);
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<nav class="main-menu">
+    <div class="back-button" onclick="window.location='/menu'">
+        <i class="fa fa-arrow-left fa-lg"></i> Voltar
+    </div>
+    <div class="search-box">
+        <input type="text" placeholder="Pesquisar empresa..." onkeyup="filterCompanies(this.value)">
+        <i class="fa fa-search"></i>
+    </div>
+    <ul class="menu-items">
+        {% for empresa in empresas %}
+        <li class="company-item">
+            <a href="javascript:void(0);" onclick="showCompanyImage('{{ empresa.imagem_url }}'); toggleSubMenu('{{ empresa.id }}');">
+                <i class="fa fa-building fa-lg"></i>
+                <span style="margin-left: 20px;">{{ empresa.nome }}</span>
+            </a>
+            <div id="submenu-{{ empresa.id }}" class="submenu">
+                <a href="javascript:void(0);" onclick="loadIframe('{{ empresa.link_financeiro }}')"><i class="fa fa-line-chart fa-lg"></i> Financeiro</a>
+                <a href="javascript:void(0);" onclick="loadIframe('{{ empresa.link_clientes }}')"><i class="fa fa-users fa-lg"></i> Clientes</a>
+                <a href="javascript:void(0);" onclick="loadIframe('{{ empresa.link_vendas }}')"><i class="fa fa-shopping-cart fa-lg"></i> Vendas</a>
+                <a href="javascript:void(0);" onclick="loadIframe('{{ empresa.link_estoque }}')"><i class="fa fa-cubes fa-lg"></i> Estoque</a>
+                <a href="javascript:void(0);" onclick="loadIframe('{{ empresa.link_rh }}')"><i class="fa fa-briefcase fa-lg"></i> RH</a>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+</nav>
+<div class="company-image" id="companyImage"></div>
+<iframe id="full-page-iframe"></iframe>
+
+<script>
+    function toggleSubMenu(empresaId) {
+        var submenu = document.getElementById('submenu-' + empresaId);
+        submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function loadIframe(url) {
+        var iframe = document.getElementById('full-page-iframe');
+        iframe.src = url;
+        iframe.style.display = 'block';
+    }
+
+    function showCompanyImage(imageUrl) {
+        var imageDiv = document.getElementById('companyImage');
+        imageDiv.style.backgroundImage = 'url(' + imageUrl + ')';
+        imageDiv.style.display = 'block';
+    }
+
+    function filterCompanies(searchText) {
+        var items = document.querySelectorAll('.company-item');
+        searchText = searchText.toLowerCase();
+        items.forEach(function(item) {
+            var name = item.textContent.toLowerCase();
+            item.style.display = name.includes(searchText) ? '' : 'none';
+        });
+    }
+</script>
+</body>
+</html>

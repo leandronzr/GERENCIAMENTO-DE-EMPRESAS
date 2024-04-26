@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Empresa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Poppins', sans-serif;
+            background-color: #0056b3;
+        }
+        .container {
+            width: 73vw;
+            height: 73vh;
+            background-color: #ffffff;
+            padding: 20px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-left: 200px;
+        }
+        .panel-title {
+            text-align: center;
+            color: #0056b3;
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        form {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-size: 1.2em;
+            color: #0056b3;
+            margin-bottom: 10px;
+        }
+        input[type="text"], input[type="url"], input[type="file"] {
+            padding: 10px;
+            border-radius: 5px;
+            border: 2px solid #0056b3;
+            font-size: 1em;
+            background: #e6f4ff;
+            color: #0056b3;
+        }
+        .btn {
+            grid-column: span 2;
+            padding: 10px 15px;
+            background-color: #0056b3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+        .btn:hover {
+            background-color: #003870;
+        }
+        .icon {
+            color: #0056b3;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="panel-title">EDITAR EMPRESA</div>
+        <form id="editForm" action="{{ url_for('editar_empresa', id=empresa.id) }}" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="nome"><i class="fa fa-building icon"></i>Nome Empresa:</label>
+                <input type="text" id="nome" name="nome" value="{{ empresa.nome }}" required>
+            </div>
+            <div class="form-group">
+                <label for="link_financeiro"><i class="fa fa-line-chart icon"></i>BI Financeiro:</label>
+                <input type="url" id="link_financeiro" name="link_financeiro" value="{{ empresa.link_financeiro }}">
+            </div>
+            <div class="form-group">
+                <label for="link_vendas"><i class="fa fa-shopping-cart icon"></i>BI Vendas:</label>
+                <input type="url" id="link_vendas" name="link_vendas" value="{{ empresa.link_vendas }}">
+            </div>
+            <div class="form-group">
+                <label for="link_estoque"><i class="fa fa-cubes icon"></i>BI Estoque:</label>
+                <input type="url" id="link_estoque" name="link_estoque" value="{{ empresa.link_estoque }}">
+            </div>
+            <div class="form-group">
+                <label for="link_clientes"><i class="fa fa-users icon"></i>BI Clientes:</label>
+                <input type="url" id="link_clientes" name="link_clientes" value="{{ empresa.link_clientes }}">
+            </div>
+            <div class="form-group">
+                <label for="link_rh"><i class="fa fa-briefcase icon"></i>BI RH:</label>
+                <input type="url" id="link_rh" name="link_rh" value="{{ empresa.link_rh }}">
+            </div>
+            <div class="form-group">
+                <label for="imagem"><i class="fa fa-image icon"></i>Trocar Imagem da Empresa:</label>
+                <input type="file" id="imagem" name="imagem">
+            </div>
+            <button type="submit" class="btn">SALVAR ALTERAÇÕES</button>
+        </form>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#editForm').submit(function(event) {
+                event.preventDefault();
+                var formData = new FormData(this);
+                $.ajax({
+                    type: 'POST',
+                    url: $(this).attr('action'),
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        alert('Alterações salvas com sucesso!');
+                    },
+                    error: function() {
+                        alert('Erro ao salvar as alterações.');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

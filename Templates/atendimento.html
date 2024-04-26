@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Atendimento</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        body, html {
+            height: 100%;
+            background: #0056b3; /* Cor de fundo */
+            font-family: Arial, sans-serif; /* Fonte */
+            font-size: 14px;
+            color: #333333; /* Cor do texto */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-left: 50px;
+        }
+
+        .chat {
+            width: 400px;
+            height: 600px;
+            background: #FFFFFF; /* Fundo do chat */
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1); /* Sombra */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-title {
+            background: #fdfeff; /* Cor do cabeçalho */
+            color: #0056b3; /* Texto branco */
+            padding: 15px;
+            font-size: 18px;
+            text-align: center;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-title i {
+            margin-right: 8px;
+        }
+
+        .messages {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+            background: #f9f9f9; /* Fundo das mensagens */
+        }
+
+        .message-box {
+            display: flex;
+            padding: 10px;
+            background: #e8f5e9; /* Fundo da caixa de mensagem */
+            align-items: center;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 12px;
+            margin-right: 10px;
+            border: none;
+            border-radius: 20px;
+            background: #ffffff;
+        }
+
+        .button {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            padding: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .send-button {
+            background-color: #007bff; /* Azul */
+            color: #FFFFFF;
+        }
+
+        .whatsapp-button {
+            background-color: #25D366; /* Verde WhatsApp */
+            color: #FFFFFF;
+            margin-left: 5px;
+        }
+
+        .notification {
+            text-align: center;
+            padding: 10px;
+            color: green;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat">
+        <div class="chat-title">
+            <i class="fa fa-comments"></i> Chat de Suporte
+        </div>
+        <div class="messages">
+            <div class="messages-content"></div>
+        </div>
+        <div class="message-box">
+            <input type="text" class="message-input" placeholder="Digite sua mensagem...">
+            <button class="button send-button" title="Enviar"><i class="fa fa-paper-plane"></i></button>
+            <button class="button whatsapp-button" title="WhatsApp" onclick="window.open('https://wa.me/+5562996216528?text=Olá!%20Gostaria%20de%20mais%20informações.');"><i class="fa fa-whatsapp"></i></button>
+        </div>
+        <div class="notification"></div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('.send-button').click(function() {
+                var message = $('.message-input').val().trim();
+                if (message !== '') {
+                    $.ajax({
+                        url: '/enviar_mensagem',
+                        method: 'POST',
+                        data: { mensagem: message },
+                        success: function(response) {
+                            if (response.error) {
+                                $('.notification').text(response.error).css('color', 'red');
+                            } else {
+                                $('.messages-content').append('<div>' + message + '</div>');
+                                $('.message-input').val('');
+                                $('.notification').text(response.success).css('color', 'green');
+                            }
+                        },
+                        error: function() {
+                            $('.notification').text('Erro ao enviar mensagem. Tente novamente.').css('color', 'red');
+                        }
+                    });
+                }
+            });
+
+            $(window).on('keydown', function(e) {
+                if (e.which == 13) {
+                    $('.send-button').click();
+                    return false;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

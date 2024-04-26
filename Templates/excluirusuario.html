@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .excluir-container {
+        text-align: center;
+        margin-top: 50px;
+    }
+    h2 {
+        color: #ffffff;
+        margin-bottom: 20px;
+    }
+    form {
+        display: inline-block;
+    }
+    button {
+        padding: 10px 20px;
+        border-radius: 5px;
+        border: 1px solid #dddddd;
+        margin: 5px;
+        cursor: pointer;
+        font-size: 16px;
+    }
+    .btn-excluir {
+        background-color: #f44336;
+        color: white;
+    }
+    .btn-excluir:hover {
+        background-color: #d32f2f;
+    }
+    .btn-cancelar {
+        background-color: #9e9e9e;
+        color: white;
+    }
+    .btn-cancelar:hover {
+        background-color: #757575;
+    }
+</style>
+<div class="excluir-container">
+    <h2>Tem certeza de que deseja excluir o usuário "{{ usuario.nome }}"?</h2>
+    <form method="POST" action="{{ url_for('excluir_usuario', id=usuario.id) }}">
+        <button type="submit" class="btn-excluir">Sim, excluir</button>
+        <a href="{{ url_for('gerenciar_usuarios') }}"><button type="button" class="btn-cancelar">Cancelar</button></a>
+    </form>
+</div>
+{% endblock %}
