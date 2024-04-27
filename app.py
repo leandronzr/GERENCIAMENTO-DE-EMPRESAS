@@ -4,6 +4,7 @@ from sqlalchemy.sql import text
 from sqlalchemy.exc import NoResultFound
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+from sqlalchemy import or_
 from itsdangerous.url_safe import URLSafeSerializer as Serializer
 from flask_mail import Mail, Message
 import os
@@ -11,8 +12,8 @@ import time
 from decouple import config
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = config('SECRET_KEY', default='logic2008@')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///logic.db'
+app.config['SECRET_KEY'] = config('SECRET_KEY')
+app.config['SQLALCHEMY_DATABASE_URI'] = config('SQLALCHEMY_DATABASE_URI', default='sqlite:///logic.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
@@ -117,10 +118,11 @@ Se você não fez essa solicitação, simplesmente ignore este e-mail e nenhuma 
 @app.route('/', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        usuario = request.form.get('usuario')
+        login_field = request.form.get('usuario')  # Este campo pode ser o nome de usuário ou e-mail
         senha = request.form.get('senha')
         try:
-            usuario_info = Usuario.query.filter_by(nome=usuario).one()
+            # Altere a consulta para buscar por nome ou e-mail
+            usuario_info = Usuario.query.filter(or_(Usuario.nome == login_field, Usuario.email == login_field)).one()
             if check_password_hash(usuario_info.senha_hash, senha):
                 session['usuario'] = usuario_info.nome
                 session['tipo'] = usuario_info.tipo
@@ -133,7 +135,6 @@ def login():
         except NoResultFound:
             flash('Usuário ou senha incorretos!', 'error')
     return render_template('login.html')
-
 # Continue com as demais rotas e lógicas de negócios conforme necessário...
 
 
@@ -296,16 +297,7 @@ def cadastrar_usuario():
         email = request.form['email']
         senha = request.form['senha']
         tipo = request.form['tipo']
-        empresa_id = request.form.get('empresa', None)  # Garante que None é usado se o campo estiver vazio
-
-        print("Raw empresa_id received:", empresa_id)  # Log para debugar
-
-        if empresa_id and empresa_id.isdigit():  # Checa se é um dígito e não está vazio
-            empresa_id = int(empresa_id)
-        else:
-            empresa_id = None
-
-        print("Processed empresa_id:", empresa_id)  # Log após processamento
+        empresa_ids = request.form.getlist('empresas')  # Captura múltiplos IDs de empresa
 
         if Usuario.query.filter_by(email=email).first():
             flash('E-mail já cadastrado!', 'error')
@@ -315,9 +307,14 @@ def cadastrar_usuario():
             nome=nome,
             email=email,
             senha_hash=generate_password_hash(senha),
-            tipo=tipo,
-            empresa_id=empresa_id
+            tipo=tipo
         )
+        # Associa o usuário a múltiplas empresas
+        for empresa_id in empresa_ids:
+            empresa = Empresa.query.get(int(empresa_id))
+            if empresa:
+                novo_usuario.empresas.append(empresa)
+
         db.session.add(novo_usuario)
         try:
             db.session.commit()
@@ -326,7 +323,7 @@ def cadastrar_usuario():
         except Exception as e:
             db.session.rollback()
             flash(f'Falha ao cadastrar usuário. Erro: {e}', 'error')
-        
+
     empresas = Empresa.query.all()
     return render_template('cadastrarusuario.html', empresas=empresas)
 
@@ -345,16 +342,28 @@ def editar_usuario(id):
     if 'usuario' not in session or session.get('tipo') != 'admin':
         flash('Acesso restrito.', 'error')
         return redirect(url_for('login'))
+
     usuario = Usuario.query.get_or_404(id)
+    todas_empresas = Empresa.query.all()  # Carrega todas as empresas
+
     if request.method == 'POST':
         usuario.nome = request.form['nome']
         usuario.email = request.form['email']
         usuario.tipo = request.form['tipo']
-        usuario.empresa = request.form.get('empresa', None)
+        empresa_id = request.form['empresa']  # Assume que o valor é o ID da empresa
+
+        # Atualiza o ID da empresa associada ao usuário
+        usuario.empresa_id = int(empresa_id) if empresa_id else None
+
         db.session.commit()
         flash('Usuário editado com sucesso!', 'success')
         return redirect(url_for('gerenciar_usuarios'))
-    return render_template('editarusuario.html', usuario=usuario)
+
+    selected_empresa_id = usuario.empresa_id
+    return render_template('editarusuario.html', usuario=usuario, todas_empresas=todas_empresas, selected_empresa_id=selected_empresa_id)
+
+
+
 
 @app.route('/gerenciar_usuarios/excluir/<int:id>', methods=['GET', 'POST'])
 def excluir_usuario(id):
@@ -419,5 +428,8 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
         add_email_column_if_not_exists()
-        adicionar_usuario('Leandro', 'utamcgoiania@gmail.com', '234', 'admin')
+    config('DEFAULT_USER_NAME'),
+    config('DEFAULT_USER_EMAIL'),
+    config('DEFAULT_USER_PASSWORD'),
+    config('DEFAULT_USER_TYPE')
     app.run(debug=True)
