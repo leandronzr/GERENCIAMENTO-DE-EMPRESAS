@@ -26,6 +26,11 @@ app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg'}
 mail = Mail(app)
 db = SQLAlchemy(app)
 
+empresas_usuarios = db.Table('empresas_usuarios',
+    db.Column('usuario_id', db.Integer, db.ForeignKey('usuario.id'), primary_key=True),
+    db.Column('empresa_id', db.Integer, db.ForeignKey('empresa.id'), primary_key=True)
+)
+
 class Empresa(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), unique=True, nullable=False)
@@ -57,9 +62,9 @@ class Usuario(db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     senha_hash = db.Column(db.String(128), nullable=False)
     tipo = db.Column(db.String(10), nullable=False)
-    empresa_id = db.Column(db.Integer, db.ForeignKey('empresa.id'), nullable=True)
 
-    empresa = db.relationship('Empresa', backref=db.backref('usuarios', lazy=True))
+    # Relação muitos-para-muitos com Empresa
+    empresas = db.relationship('Empresa', secondary=empresas_usuarios, backref=db.backref('usuarios', lazy='dynamic'))
 
     def get_reset_password_token(self, expires_sec=1800):
         s = Serializer(app.config['SECRET_KEY'])
@@ -68,6 +73,14 @@ class Usuario(db.Model):
 
     def __repr__(self):
         return f'<Usuario {self.nome}, Empresa ID: {self.empresa_id}>'
+    
+@app.route('/empresas-json')
+def empresas_json():
+    empresas = Empresa.query.all()
+    empresas_data = [{'id': empresa.id, 'text': empresa.nome} for empresa in empresas]
+    return jsonify(empresas_data)
+
+
 
     @staticmethod
     def verify_reset_password_token(token):
@@ -87,7 +100,7 @@ def adicionar_usuario(nome, email, senha, tipo, empresa_id=None):
         print("Erro: Usuário com este e-mail já existe.")
         return False
     if empresa_id:
-        empresa_id = int(empresa_id)  # Converte o ID da empresa de string para int
+        empresa_id = int(empresa_id)  
     novo_usuario = Usuario(nome=nome, email=email, senha_hash=generate_password_hash(senha), tipo=tipo, empresa_id=empresa_id)
     db.session.add(novo_usuario)
     try:
@@ -118,16 +131,24 @@ Se você não fez essa solicitação, simplesmente ignore este e-mail e nenhuma 
 @app.route('/', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        login_field = request.form.get('usuario')  # Este campo pode ser o nome de usuário ou e-mail
+        login_field = request.form.get('usuario')
         senha = request.form.get('senha')
         try:
-            # Altere a consulta para buscar por nome ou e-mail
+            # Tenta encontrar o usuário pelo nome ou e-mail
             usuario_info = Usuario.query.filter(or_(Usuario.nome == login_field, Usuario.email == login_field)).one()
             if check_password_hash(usuario_info.senha_hash, senha):
+                # Armazenar informações do usuário na sessão
+                session['usuario_id'] = usuario_info.id  # Armazenar ID para uso posterior
                 session['usuario'] = usuario_info.nome
                 session['tipo'] = usuario_info.tipo
-                session['empresa'] = usuario_info.empresa.to_dict() if usuario_info.empresa else None
                 session['email'] = usuario_info.email
+                
+                # Armazenar as empresas associadas para um usuário do tipo "empresa"
+                if usuario_info.tipo == 'empresa':
+                    session['empresas'] = [empresa.id for empresa in usuario_info.empresas]
+                else:
+                    session['empresas'] = [empresa.id for empresa in Empresa.query.all()]
+                
                 flash('Bem-vindo à Logic!', 'success')
                 return redirect(url_for('menu'))
             else:
@@ -135,7 +156,6 @@ def login():
         except NoResultFound:
             flash('Usuário ou senha incorretos!', 'error')
     return render_template('login.html')
-# Continue com as demais rotas e lógicas de negócios conforme necessário...
 
 
 @app.route('/menu')
@@ -185,23 +205,22 @@ def allowed_file(filename):
 
 @app.route('/empresas')
 def empresas():
+    if 'usuario' not in session:
+        flash('Você precisa estar logado para acessar esta página.', 'info')
+        return redirect(url_for('login'))
+
     try:
-        if 'usuario' not in session:
-            flash('Você precisa estar logado para acessar esta página.', 'info')
+        usuario_logado = Usuario.query.filter_by(nome=session['usuario']).first()
+        if not usuario_logado:
+            flash('Usuário não encontrado.', 'error')
             return redirect(url_for('login'))
 
-        user_type = session.get('tipo')
-        user_empresa = session.get('empresa')  # Supondo que isso deva ser uma string
-
-        # Certifique-se de que estamos trabalhando com uma string
-        if isinstance(user_empresa, dict):
-            user_empresa = user_empresa.get('nome')  # Ajuste conforme o formato do seu dicionário
-
-        if user_type == 'empresa':
-            # Filtra para mostrar apenas a empresa do usuário se ele for do tipo 'empresa'
-            empresas = Empresa.query.filter(Empresa.nome == user_empresa).all()
+        # Filtrar empresas baseadas no tipo de usuário
+        if usuario_logado.tipo == 'empresa':
+            # Usando a relação muitos-para-muitos para filtrar apenas as empresas associadas ao usuário
+            empresas = usuario_logado.empresas
         else:
-            empresas = Empresa.query.all()
+            empresas = Empresa.query.all()  # Admins veem todas as empresas
 
         empresas_info = [{
             'id': empresa.id,
@@ -214,7 +233,12 @@ def empresas():
             'imagem_url': empresa.imagem_url if empresa.imagem_url else url_for('static', filename='default-company.png')
         } for empresa in empresas]
 
-        return render_template('empresas.html', empresas=empresas_info)
+        # Checar se a requisição aceita JSON, caso contrário, renderizar HTML
+        if request.headers.get('Accept') == 'application/json':
+            return jsonify(empresas_info)
+        else:
+            return render_template('empresas.html', empresas=empresas_info)
+
     except Exception as e:
         app.logger.error(f"Erro na rota /empresas: {str(e)}")
         flash('Erro ao carregar as empresas.', 'error')
@@ -244,12 +268,12 @@ def editar_empresa(id):
         empresa.link_clientes = request.form.get('link_clientes')
         empresa.link_rh = request.form.get('link_rh')
 
-        # Tratar o upload da imagem
+        
         imagem = request.files['imagem']
         if imagem and allowed_file(imagem.filename):
             filename = secure_filename(imagem.filename)
             imagem.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            # Atualiza a URL da imagem no banco de dados
+            
             empresa.imagem_url = url_for('static', filename='uploads/' + filename, _external=True)
 
         db.session.commit()
@@ -292,37 +316,58 @@ def cadastrar_usuario():
         flash('Acesso restrito.', 'error')
         return redirect(url_for('login'))
 
+    empresas = Empresa.query.all()  # Lista todas as empresas para o formulário
+
     if request.method == 'POST':
-        nome = request.form['nome']
-        email = request.form['email']
-        senha = request.form['senha']
-        tipo = request.form['tipo']
-        empresa_ids = request.form.getlist('empresas')  # Captura múltiplos IDs de empresa
+        nome = request.form.get('nome')
+        email = request.form.get('email')
+        senha = request.form.get('senha')
+        tipo = request.form.get('tipo')
+        empresa_ids = request.form.getlist('empresa[]')
 
         if Usuario.query.filter_by(email=email).first():
             flash('E-mail já cadastrado!', 'error')
-            return redirect(url_for('cadastrar_usuario'))
+            return render_template('cadastrarusuario.html', empresas=empresas)
 
-        novo_usuario = Usuario(
-            nome=nome,
-            email=email,
-            senha_hash=generate_password_hash(senha),
-            tipo=tipo
-        )
-        # Associa o usuário a múltiplas empresas
-        for empresa_id in empresa_ids:
-            empresa = Empresa.query.get(int(empresa_id))
-            if empresa:
-                novo_usuario.empresas.append(empresa)
-
-        db.session.add(novo_usuario)
         try:
+            usuario = Usuario(nome=nome, email=email, senha_hash=generate_password_hash(senha), tipo=tipo)
+            db.session.add(usuario)
+            for empresa_id in empresa_ids:
+                empresa = Empresa.query.get(int(empresa_id))
+                if empresa:
+                    usuario.empresas.append(empresa)
             db.session.commit()
             flash('Usuário cadastrado com sucesso!', 'success')
             return redirect(url_for('cadastrar_usuario'))
         except Exception as e:
             db.session.rollback()
-            flash(f'Falha ao cadastrar usuário. Erro: {e}', 'error')
+            flash(f'Falha ao cadastrar usuário. Erro: {str(e)}', 'error')
+
+    return render_template('cadastrarusuario.html', empresas=empresas)
+
+def criar_usuario(nome, email, senha, tipo):
+    try:
+        novo_usuario = Usuario(nome=nome, email=email, senha_hash=generate_password_hash(senha), tipo=tipo)
+        db.session.add(novo_usuario)
+        db.session.commit()
+        return novo_usuario
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Erro ao adicionar usuário: {e}")
+        return None
+
+def adicionar_empresas_a_usuario(usuario, empresa_ids):
+    try:
+        for empresa_id in empresa_ids:
+            empresa = Empresa.query.get(int(empresa_id))
+            if empresa:
+                usuario.empresas.append(empresa)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Erro ao adicionar empresas ao usuário: {e}")
+        flash(f'Erro ao vincular empresas. Erro: {e}', 'error')
+
 
     empresas = Empresa.query.all()
     return render_template('cadastrarusuario.html', empresas=empresas)
@@ -344,15 +389,14 @@ def editar_usuario(id):
         return redirect(url_for('login'))
 
     usuario = Usuario.query.get_or_404(id)
-    todas_empresas = Empresa.query.all()  # Carrega todas as empresas
+    todas_empresas = Empresa.query.all()  
 
     if request.method == 'POST':
         usuario.nome = request.form['nome']
         usuario.email = request.form['email']
         usuario.tipo = request.form['tipo']
-        empresa_id = request.form['empresa']  # Assume que o valor é o ID da empresa
+        empresa_id = request.form['empresa']  
 
-        # Atualiza o ID da empresa associada ao usuário
         usuario.empresa_id = int(empresa_id) if empresa_id else None
 
         db.session.commit()
