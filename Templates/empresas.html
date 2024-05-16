@@ -10,7 +10,7 @@
             margin: 0;
             padding: 0;
             height: 100%;
-            font-family: 'Roboto', sans-serif;
+            font-family: 'Open Sans', sans-serif;
             background-color: #f4f7fc;
         }
         .main-menu {
@@ -18,26 +18,44 @@
             position: fixed;
             top: 0;
             left: 0;
-            width: 200px;
+            width: 250px;
             height: 100%;
             overflow: auto;
-            z-index: 1000;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-right: 1px solid #ddd;
         }
-        .back-button {
+        .menu-item {
             display: flex;
             justify-content: center;
-            align-items: center;
-            padding: 05px;
-            width: 100%;
-            background-color: #0056b3;
-            color: white;
-            text-align: left;
-            cursor: pointer;
-            transition: background-color 0.2s ease-in-out;
+            padding: 12px 0;
+            transition: background-color 0.3s;
+            color: #0056b3;
+            text-decoration: none;
+            border-bottom: 1px solid #e1e4e8;
         }
-        .back-button:hover {
-            background-color: #003d82;
+        .menu-item:hover, .menu-item.active {
+            background-color: #0056b3;
+            color: #ffffff;
+        }
+        .submenu {
+            display: none;
+            width: 100%;
+            padding: 0;
+            border-top: 1px solid transparent;
+            border-bottom: 1px solid transparent;
+        }
+        .submenu-item {
+            display: block;
+            padding: 8px 20px;
+            width: 100%;
+            text-decoration: none;
+            color: #0056b3;
+            background: #f9f9f9;
+            border-bottom: 1px solid #e1e4e8;
+            text-align: left; 
+        }
+        .submenu-item:hover {
+            background-color: #000000;
         }
         .search-box {
             padding: 10px;
@@ -46,7 +64,7 @@
             border-bottom: 1px solid #cccccc;
         }
         .search-box input {
-            width: calc(100% - 40px);
+            flex-grow: 1;
             padding: 8px;
             border: 2px solid #0056b3;
             border-radius: 4px;
@@ -54,58 +72,29 @@
         }
         .search-box i {
             color: #0056b3;
-            cursor: pointer;
-        }
-        .menu-items {
-            list-style-type: none;
-            padding: 0;
-            margin: 0;
-            width: 100%;
-            background: #ffffff;
-        }
-        .menu-items li > a {
-            color: #0056b3;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            padding: 10px 20px;
-            transition: all 0.3s ease;
-            border-bottom: 1px solid #e1e4e8;
-        }
-        .menu-items li > a:hover, .menu-items li.active > a {
-            background-color: #0056b3;
-            color: #ffffff;
-            transform: translateX(5px);
-        }
-        .submenu {
-            display: none;
-            background: #ffffff;
-            padding: 0;
-            margin-top: 5px;
-            text-align: left;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-        .submenu a {
-            display: flex;
-            align-items: center;
-            color: #0056b3;
-            padding: 10px 20px;
-            text-decoration: none;
-            transition: background-color 0.2s, color 0.2s;
-            border-bottom: 1px solid #e1e4e8; /* Added border for separation */
-            margin-left: 20px; /* Ensures space between icon and text */
-        }
-        .submenu a:hover {
-            background-color: #e0f0ff;
-            color: #0056b3;
         }
         #full-page-iframe {
             position: fixed;
             top: 0;
-            left: 220px;
-            width: calc(100% - 220px);
+            left: 250px;
+            width: calc(100% - 250px);
             height: 110%;
             border: none;
+        }
+        .back-button {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            width: 100%;
+            background-color: #0056b3;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+            border-radius: 0 10px 0 0;
+        }
+        .back-button:hover {
+            background-color: #003d82;
         }
         .company-image {
             position: fixed;
@@ -136,11 +125,21 @@
                 <span style="margin-left: 20px;">{{ empresa.nome }}</span>
             </a>
             <div id="submenu-{{ empresa.id }}" class="submenu">
-                <a href="javascript:void(0);" onclick="loadIframe('{{ empresa.link_financeiro }}')"><i class="fa fa-line-chart fa-lg"></i> Financeiro</a>
-                <a href="javascript:void(0);" onclick="loadIframe('{{ empresa.link_clientes }}')"><i class="fa fa-users fa-lg"></i> Clientes</a>
-                <a href="javascript:void(0);" onclick="loadIframe('{{ empresa.link_vendas }}')"><i class="fa fa-shopping-cart fa-lg"></i> Vendas</a>
-                <a href="javascript:void(0);" onclick="loadIframe('{{ empresa.link_estoque }}')"><i class="fa fa-cubes fa-lg"></i> Estoque</a>
-                <a href="javascript:void(0);" onclick="loadIframe('{{ empresa.link_rh }}')"><i class="fa fa-briefcase fa-lg"></i> RH</a>
+                {% if empresa.link_financeiro %}
+                <a href="javascript:void(0);" onclick="loadIframe('{{ empresa.link_financeiro }}')" class="submenu-item"><i class="fa fa-line-chart fa-lg"></i> Financeiro</a>
+                {% endif %}
+                {% if empresa.link_clientes %}
+                <a href="javascript:void(0);" onclick="loadIframe('{{ empresa.link_clientes }}')" class="submenu-item"><i class="fa fa-users fa-lg"></i> Clientes</a>
+                {% endif %}
+                {% if empresa.link_vendas %}
+                <a href="javascript:void(0);" onclick="loadIframe('{{ empresa.link_vendas }}')" class="submenu-item"><i class="fa fa-shopping-cart fa-lg"></i> Vendas</a>
+                {% endif %}
+                {% if empresa.link_estoque %}
+                <a href="javascript:void(0);" onclick="loadIframe('{{ empresa.link_estoque }}')" class="submenu-item"><i class="fa fa-cubes fa-lg"></i> Estoque</a>
+                {% endif %}
+                {% if empresa.link_rh %}
+                <a href="javascript:void(0);" onclick="loadIframe('{{ empresa.link_rh }}')" class="submenu-item"><i class="fa fa-briefcase fa-lg"></i> RH</a>
+                {% endif %}
             </div>
         </li>
         {% endfor %}

@@ -9,17 +9,19 @@ from itsdangerous.url_safe import URLSafeSerializer as Serializer
 from flask_mail import Mail, Message
 import os
 import time
-from decouple import config
+from dotenv import load_dotenv
+
+load_dotenv
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = config('SECRET_KEY')
-app.config['SQLALCHEMY_DATABASE_URI'] = config('SQLALCHEMY_DATABASE_URI', default='sqlite:///logic.db')
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI', default='sqlite:///logic.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = config('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = config('MAIL_PASSWORD')
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg'}
 
@@ -72,8 +74,20 @@ class Usuario(db.Model):
         return s.dumps({'user_id': self.id, 'exp': timestamp})
 
     def __repr__(self):
-        return f'<Usuario {self.nome}, Empresa ID: {self.empresa_id}>'
-    
+        return f'<Usuario {self.nome}>'
+
+    @staticmethod
+    def verify_reset_password_token(token):
+        s = Serializer(app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token)
+            if data['exp'] < int(time.time()):
+                return None
+            user_id = data['user_id']
+        except:
+            return None
+        return Usuario.query.get(user_id)
+     
 @app.route('/empresas-json')
 def empresas_json():
     empresas = Empresa.query.all()
@@ -134,16 +148,16 @@ def login():
         login_field = request.form.get('usuario')
         senha = request.form.get('senha')
         try:
-            # Tenta encontrar o usuário pelo nome ou e-mail
+            
             usuario_info = Usuario.query.filter(or_(Usuario.nome == login_field, Usuario.email == login_field)).one()
             if check_password_hash(usuario_info.senha_hash, senha):
-                # Armazenar informações do usuário na sessão
-                session['usuario_id'] = usuario_info.id  # Armazenar ID para uso posterior
+               
+                session['usuario_id'] = usuario_info.id  
                 session['usuario'] = usuario_info.nome
                 session['tipo'] = usuario_info.tipo
                 session['email'] = usuario_info.email
                 
-                # Armazenar as empresas associadas para um usuário do tipo "empresa"
+               
                 if usuario_info.tipo == 'empresa':
                     session['empresas'] = [empresa.id for empresa in usuario_info.empresas]
                 else:
@@ -215,12 +229,12 @@ def empresas():
             flash('Usuário não encontrado.', 'error')
             return redirect(url_for('login'))
 
-        # Filtrar empresas baseadas no tipo de usuário
+        
         if usuario_logado.tipo == 'empresa':
-            # Usando a relação muitos-para-muitos para filtrar apenas as empresas associadas ao usuário
+            
             empresas = usuario_logado.empresas
         else:
-            empresas = Empresa.query.all()  # Admins veem todas as empresas
+            empresas = Empresa.query.all()  
 
         empresas_info = [{
             'id': empresa.id,
@@ -233,7 +247,7 @@ def empresas():
             'imagem_url': empresa.imagem_url if empresa.imagem_url else url_for('static', filename='default-company.png')
         } for empresa in empresas]
 
-        # Checar se a requisição aceita JSON, caso contrário, renderizar HTML
+       
         if request.headers.get('Accept') == 'application/json':
             return jsonify(empresas_info)
         else:
@@ -316,7 +330,7 @@ def cadastrar_usuario():
         flash('Acesso restrito.', 'error')
         return redirect(url_for('login'))
 
-    empresas = Empresa.query.all()  # Lista todas as empresas para o formulário
+    empresas = Empresa.query.all()  
 
     if request.method == 'POST':
         nome = request.form.get('nome')
@@ -406,21 +420,16 @@ def editar_usuario(id):
     selected_empresa_id = usuario.empresa_id
     return render_template('editarusuario.html', usuario=usuario, todas_empresas=todas_empresas, selected_empresa_id=selected_empresa_id)
 
-
-
-
-@app.route('/gerenciar_usuarios/excluir/<int:id>', methods=['GET', 'POST'])
+@app.route('/gerenciar_usuarios/excluir/<int:id>', methods=['POST'])
 def excluir_usuario(id):
     if 'usuario' not in session or session.get('tipo') != 'admin':
         flash('Acesso restrito.', 'error')
         return redirect(url_for('login'))
     usuario = Usuario.query.get_or_404(id)
-    if request.method == 'POST':
-        db.session.delete(usuario)
-        db.session.commit()
-        flash('Usuário excluído com sucesso!', 'success')
-        return redirect(url_for('gerenciar_usuarios'))
-    return render_template('excluirusuario.html', usuario=usuario)
+    db.session.delete(usuario)
+    db.session.commit()
+    return jsonify({'success': True})
+
 
 @app.route('/esqueceu_senha', methods=['GET', 'POST'])
 def esqueceu_senha():
@@ -472,8 +481,8 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
         add_email_column_if_not_exists()
-    config('DEFAULT_USER_NAME'),
-    config('DEFAULT_USER_EMAIL'),
-    config('DEFAULT_USER_PASSWORD'),
-    config('DEFAULT_USER_TYPE')
+    os.getenv('DEFAULT_USER_NAME'),
+    os.getenv('DEFAULT_USER_EMAIL'),
+    os.getenv('DEFAULT_USER_PASSWORD'),
+    os.getenv('DEFAULT_USER_TYPE')
     app.run(debug=True)

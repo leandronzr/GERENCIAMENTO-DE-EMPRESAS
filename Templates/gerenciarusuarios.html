@@ -3,29 +3,29 @@
 {% block content %}
 <style>
     body {
-        background-color: #0056b3; /* Fundo azul claro */
-        color: #0056b3; /* Texto em azul */
+        background-color: #0056b3;
+        color: #0056b3;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        padding-top: 10px; /* Pequeno espaçamento no topo */
+        padding-top: 10px;
     }
     .container {
-        width: 72vw; /* 100% da largura da viewport */
-        height: 75vh; /* 85% da altura da viewport */
-        margin-left: 290px;
-        margin-top: 50px; /* Empurra 50px para baixo do topo da página */
-        margin-bottom: 20px; /* Mantém 30px de espaço livre abaixo do contêiner */
-        padding: 20px; /* Espaçamento interno de 20px */
-        background-color: #ffffff; /* Fundo branco */
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); /* Sombra */
-        border-radius: 5px; /* Bordas arredondadas */
+        width: 73vw;
+        height: 78vh;
+        margin-left: 288px;
+        margin-top: 50px;
+        margin-bottom: 30px;
+        padding: 20px;
+        background-color: #ffffff;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        border-radius: 5px;
         display: flex;
         flex-direction: column;
-        align-items: flex-start; /* Alinhamento do conteúdo à esquerda */
+        align-items: flex-start;
     }
     .header {
-        width: 100%; /* Usa toda a largura do container */
+        width: 100%;
         display: flex;
-        justify-content: space-between; /* Espaço entre os elementos */
+        justify-content: space-between;
         align-items: center;
     }
     h2 {
@@ -39,21 +39,21 @@
         padding: 8px;
         border-radius: 5px;
         border: 1px solid #0056b3;
-        width: 300px; /* Largura fixa para o input */
+        width: 300px;
     }
     .filter-icon {
         color: #0056b3;
         cursor: pointer;
-        font-size: 1.5em; /* Tamanho do ícone */
+        font-size: 1.5em;
         position: absolute;
         right: 0;
         top: 50%;
         transform: translateY(-50%);
     }
     .table-responsive {
-        overflow-y: auto; /* Adiciona barra de rolagem vertical se necessário */
-        width: 100%; /* Define a largura da tabela */
-        margin-top: 10px; /* Espaçamento acima da tabela */
+        overflow-y: auto;
+        width: 100%;
+        margin-top: 10px;
     }
     .table {
         width: 100%;
@@ -74,9 +74,17 @@
         background-color: #0056b3;
         color: #ffffff;
         transition: background-color 0.3s ease;
+        text-decoration: none;
+        margin-right: 5px; 
+        margin-top: 10px;
     }
     .btn-custom:hover {
         background-color: #003d7a;
+    }
+    .btn-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
 </style>
 
@@ -105,30 +113,14 @@
                     <td>{{ usuario.nome }}</td>
                     <td>{{ usuario.email }}</td>
                     <td>{{ usuario.tipo }}</td>
-                    <td>{{ usuario.empresa }}</td>
                     <td>
-                        <button onclick="toggleForm('edit-form-{{ usuario.id }}')" class="btn btn-custom"><i class="fas fa-edit"></i>Editar</button>
-                        <button onclick="handleDelete('{{ usuario.id }}', this)" class="btn btn-custom"><i class="fas fa-trash-alt"></i>Excluir</button>
+                        {% for empresa in usuario.empresas %}
+                            {{ empresa.nome }}{% if not loop.last %}, {% endif %}
+                        {% endfor %}
                     </td>
-                </tr>
-                <tr id="edit-form-{{ usuario.id }}" style="display: none;">
-                    <td colspan="5">
-                        <form onsubmit="handleEdit(event, this, '{{ usuario.id }}')">
-                            <input type="text" name="nome" value="{{ usuario.nome }}" required>
-                            <input type="email" name="email" value="{{ usuario.email }}" required>
-                            <select name="tipo" required>
-                                <option value="admin" {% if usuario.tipo == 'admin' %}selected{% endif %}>Admin</option>
-                                <option value="geral" {% if usuario.tipo == 'geral' %}selected{% endif %}>Geral</option>
-                                <option value="empresa" {% if usuario.tipo == 'empresa' %}selected{% endif %}>Empresa</option>
-                            </select>
-                            <select name="empresa">
-                                <option value="">Nenhuma</option>
-                                {% for empresa in empresas %}
-                                <option value="{{ empresa.nome }}" {% if usuario.empresa == empresa.nome %}selected{% endif %}>{{ empresa.nome }}</option>
-                                {% endfor %}
-                            </select>
-                            <button type="submit" class="btn btn-custom">Salvar</button>
-                        </form>
+                    <td class="btn-container">
+                        <a href="javascript:void(0);" onclick="loadEditForm('{{ usuario.id }}', this)" class="btn btn-custom"><i class="fas fa-edit"></i>Editar</a>
+                        <button onclick="handleDelete('{{ usuario.id }}', this)" class="btn btn-custom"><i class="fas fa-trash-alt"></i>Excluir</button>
                     </td>
                 </tr>
                 {% endfor %}
@@ -137,51 +129,58 @@
     </div>
 </div>
 
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2/dist/js/select2.full.min.js"></script>
 <script>
-    function toggleForm(formId) {
-        var form = document.getElementById(formId);
-        form.style.display = form.style.display === "none" ? "table-row" : "none";
+    function loadEditForm(userId, element) {
+        $.ajax({
+            url: `/gerenciar_usuarios/editar/${userId}`,
+            type: 'GET',
+            success: function(response) {
+                $('#content').html(response);
+                initializeSelect2();
+            },
+            error: function(xhr) {
+                $('#content').html(`<p>Erro ao carregar o formulário de edição. Status: ${xhr.status}</p>`);
+            }
+        });
     }
 
-    function handleDelete(id, element) {
-        if (confirm('Are you sure you want to delete this user?')) {
-            const url = `/gerenciar_usuarios/excluir/${id}`;
+    function initializeSelect2() {
+        if (!$.fn.select2) {
+            console.error("Select2 não foi carregado corretamente.");
+            return;
+        }
+        $('.select2').each(function() {
+            if ($(this).data('select2')) {
+                $(this).select2('destroy');
+            }
+            $(this).select2({
+                minimumResultsForSearch: Infinity
+            });
+        });
+    }
+
+    function handleDelete(userId, element) {
+        if (confirm('Tem certeza de que deseja excluir este usuário?')) {
             $.ajax({
-                url: url,
+                url: `/gerenciar_usuarios/excluir/${userId}`, 
                 type: 'POST',
-                success: function() {
-                    alert('User deleted successfully.');
-                    $(element).closest('tr').fadeOut(400, function() { 
-                        $(this).remove(); // Removes row from DOM after fade out
-                    });
+                success: function(response) {
+                    if (response.success) {
+                        $(element).closest('tr').fadeOut(400, function() {
+                            $(this).remove();
+                        });
+                        alert('Usuário excluído com sucesso.');
+                    } else {
+                        alert('Falha ao excluir usuário: ' + response.message);
+                    }
                 },
-                error: function() {
-                    alert('Failed to delete user.');
+                error: function(xhr) {
+                    alert('Erro ao tentar excluir usuário: ' + xhr.responseText);
                 }
             });
         }
-    }
-
-    function handleEdit(event, form, id) {
-        event.preventDefault();
-        const data = $(form).serialize(); // Serialize the form data
-        const url = `/gerenciar_usuarios/editar/${id}`;
-        $.ajax({
-            url: url,
-            type: 'POST',
-            data: data,
-            success: function(response) {
-                alert('Usuário atualizado com sucesso.');
-                $('#user-row-' + id + ' td:first').text($(form).find('input[name="nome"]').val()); // Update the name directly
-                $('#user-row-' + id + ' td:nth-child(2)').text($(form).find('input[name="email"]').val()); // Update the email directly
-                $('#user-row-' + id + ' td:nth-child(3)').text($(form).find('select[name="tipo"]').val()); // Update the type directly
-                $('#user-row-' + id + ' td:nth-child(4)').text($(form).find('select[name="empresa"]').val()); // Update the company directly
-                toggleForm('edit-form-' + id); // Close the form
-            },
-            error: function() {
-                alert('Erro ao atualizar usuário.');
-            }
-        });
     }
 </script>
 {% endblock %}
