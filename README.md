@@ -1,3 +1,7 @@
+Só executar galera, ocultei algumas coisas do código mesmo e apaguei a pasta static, para as imagens só criar ela e uma sub-pasta uploads!
+login, esqueceu a senha, redefinir senhas e vários templates pra vocês tudo configurado! 
+
+
 Sistema de Gerenciamento Web
 
 Visão Geral:
@@ -36,3 +40,5 @@ Funcionalidades Principais:
 
 Conclusão:
 Este sistema é uma solução eficaz para empresas que buscam melhorar a gestão de suas operações e de seu capital humano. Com uma interface clara e funcionalidades robustas, o sistema promove uma gestão mais eficiente e segura, sendo uma ferramenta valiosa para o crescimento e organização empresarial.
+
+
